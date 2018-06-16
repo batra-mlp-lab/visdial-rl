@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Distribution / packaging
+.Python
+env/
+build/
+
+# Checkpoints directory
+checkpoints
+
+# Dialog output dumps
+dialog_output/results
+
+# IPython Notebook
+.ipynb_checkpoints
+
+# virtualenv
+venv/
+ENV/
