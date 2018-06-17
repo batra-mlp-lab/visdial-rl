@@ -247,7 +247,7 @@ If you use this code as part of any published research,  please cite this repo a
    year = {2018},
    publisher = {GitHub}.
    journal = {GitHub repository},
-   howpublished = {\url{https://github.com/batra-mlp-lab/visdial-rl-pytorch.git}},
+   howpublished = {\url{https://github.com/batra-mlp-lab/visdial-rl.git}},
    commit = {}
 }
 
