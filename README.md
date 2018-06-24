@@ -28,7 +28,7 @@ Table of Contents
       * [Logging](#logging)
       * [Evaluation](#evaluation)
       * [Benchmarks](#benchmarks)
-   * [Visualizing Results](#visualizing-results)
+      * [Visualizing Results](#visualizing-results)
    * [Reference](#reference)
    * [License](#license)
 
@@ -42,7 +42,6 @@ Our code is implemented in PyTorch (v0.3.1). To setup, do the following:
 4. Get the source:
 ```
 git clone https://github.com/batra-mlp-lab/visdial-rl.git visdial-pytorch
-
 ```
 5. Install requirements into the `visdial-rl-pytorch` virtual environment, using [Anaconda](https://anaconda.org/anaconda/python):
 ```
@@ -169,7 +168,6 @@ python evaluate.py -useGPU \
     -visdomServerPort <port> \
     -visdomEnv my-eval-job \
     -evalMode ABotRank QBotRank
-
 ```
 
 For evaluation of Q-Bot on image guessing when interacting with an A-Bot, the following command can be used. Since no human-human dialog (ground truth) is shown to the agents at this stage, ground truth captions are not used. Instead, captions need to be read from `chat_processed_data_gencaps.h5`, which contains preprocessed captions generated from [neuraltalk2](https://github.com/karpathy/neuraltalk2). This file provides the VisDial 0.5 test split where original ground truth captions are replaced by generated captions.
@@ -198,8 +196,6 @@ The plots below show percentile mean rank (PMR) numbers obtained on evaluating t
 We have also experimented with other hyperparameter settings and found that scaling the cross entropy loss lead to a significant improvement in PMR. Namely, setting `CELossCoeff` to `1` and `lrDecayRate` to `0.999962372474343` lead to the PMR values shown on the right. The corresponding pre-trained checkpoints are available for download and are denoted by a `_delta` suffix.
 
 Note that RL fine tuning begins with annealing i.e. the RL objective is gradually eased in from the last round (round 10) to the first round of dialog. Every epoch after the first one begins be decreasing the number of rounds for which supervised pre-training is used. The following plots show the RL-Full-QAf model results at epoch 10 (when annealing ends) as well as epoch 20.
-
-Note that RL fine tuning begins with annealing i.e. the RL objective is gradually eased in from the last round (round 10) to the first round of dialog. Every epoch after the first one begins be decreasing the number of rounds for which supervised pre-training is used. The following plots show the RL-Full-QAf model results at epoch 10 (when annealing ends) as well as epoch 20 (10 epochs of only RL)
 
 <div align=center>
   <img src='images/qbot-match-gen.png' alt='qbot-generated' height='250px' />
@@ -233,6 +229,8 @@ python evaluate.py -useGPU \
     -startFrom checkpoints/abot_rl_ep20.vd \
     -qstartFrom checkpoints/qbot_rl_ep20.vd \
     -evalMode dialog \
+    -cocoDir /path/to/coco/images/ \
+    -cocoInfo /path/to/coco.json \
     -beamSize 5
 ```
 
@@ -258,7 +256,7 @@ If you use this code as part of any published research,  please cite this repo a
    publisher = {GitHub}.
    journal = {GitHub repository},
    howpublished = {\url{https://github.com/batra-mlp-lab/visdial-rl.git}}
- }
+}
 
 @inproceedings{das2017visdialrl,
   title={Learning Cooperative Visual Dialog Agents with Deep Reinforcement Learning},
