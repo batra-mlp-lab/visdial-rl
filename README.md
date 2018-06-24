@@ -41,7 +41,8 @@ Our code is implemented in PyTorch (v0.3.1). To setup, do the following:
 3. If you would also like to extract your own image features, install [Torch](http://torch.ch/), [torch-hdf5](https://github.com/deepmind/torch-hdf5), [torch/image/](https://github.com/torch/image), [torch/loadcaffe/](https://github.com/szagoruyko/loadcaffe), and optionally [torch/cutorch/](https://github.com/torch/cutorch), [torch/cudnn/](https://github.com/soumith/cudnn.torch), and [torch/cunn/](https://github.com/torch/cunn) for GPU acceleration. Alternatively, you could directly use the precomputed features provided below.
 4. Get the source:
 ```
-git clone https://github.com/batra-mlp-lab/visdial-rl-pytorch.git visdial-pytorch
+git clone https://github.com/batra-mlp-lab/visdial-rl.git visdial-pytorch
+
 ```
 5. Install requirements into the `visdial-rl-pytorch` virtual environment, using [Anaconda](https://anaconda.org/anaconda/python):
 ```
