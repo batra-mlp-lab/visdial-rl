@@ -53,7 +53,8 @@ if 'numRounds' not in params:
 params['continue'] = True
 
 excludeParams = ['batchSize', 'visdomEnv', 'startFrom', 'qstartFrom', 'trainMode', \
-    'evalModeList', 'inputImg', 'inputQues', 'inputJson', 'evalTitle', 'beamSize']
+    'evalModeList', 'inputImg', 'inputQues', 'inputJson', 'evalTitle', 'beamSize', \
+    'enableVisdom', 'visdomServer', 'visdomServerPort']
 
 aBot = None
 qBot = None
