@@ -25,8 +25,8 @@ Table of Contents
       * [Pre-trained checkpoints](#pre-trained-checkpoints)
       * [Demo](#demo)
       * [Training](#training)
-      * [Evaluation](#evaluation)
       * [Logging](#logging)
+      * [Evaluation](#evaluation)
       * [Benchmarks](#benchmarks)
    * [Visualizing Results](#visualizing-results)
    * [Reference](#reference)
@@ -133,31 +133,6 @@ python train.py -useGPU \
    -qstartFrom checkpoints/qbot_sl_ep60.vd
 ```
 
-
-### Evaluation
-
-
-The three types of evaluation - (1) ranking A-Bot's answers, (2) ranking Q-Bot's image predictions and (3) ranking Q-Bot's predictions when interacting with an A-Bot, are arguments `QBotRank`, `ABotRank` and `QABotsRank` respectively to `evalMode`. Any subset of them can be given as a list to `evalMode`.
-
-For evaluation of Q-Bot on image guessing and A-Bot on answer ranking on human-human dialog (ground truth captions, questions and answers), the following command can be used:
-
-```
-python evaluate.py -useGPU \
-    -startFrom checkpoints/abot_sl_ep60.vd \
-    -qstartFrom checkpoints/qbot_sl_ep60.vd \
-    -evalMode ABotRank QBotRank
-```
-
-For evaluation of Q-Bot on image guessing when interacting with an A-Bot, the following command can be used. Since no human-human dialog (ground truth) is shown to the agents at this stage, ground truth captions are not used. Instead, captions need to be read from `chat_processed_data_gencaps.h5`, which contains preprocessed captions generated from [neuraltalk2](https://github.com/karpathy/neuraltalk2). This file provides the VisDial 0.5 test split where original ground truth captions are replaced by generated captions.
-
-```
-python evaluate.py -useGPU \
-    -inputQues data/visdial/chat_processed_data_gencaps.h5 \
-    -startFrom checkpoints/abot_sl_ep60.vd \
-    -qstartFrom checkpoints/qbot_sl_ep60.vd \
-    -evalMode QABotsRank
-```
-
 ### Logging
 
 The code supports logging several metrics via [visdom](https://github.com/facebookresearch/visdom). These include train and val loss curves, VisDial metrics (mean rank, reciprocal mean rank, recall@1/5/10 for the answerer, and percentile mean rank for the questioner). To enable visdom logging, use the `enableVisdom` option along with other visdom server settings in `options.py`. A standalone visdom server can be started using:
@@ -166,7 +141,7 @@ The code supports logging several metrics via [visdom](https://github.com/facebo
 python -m visdom.server -p <port>
 ```
 
-Now you can navigate to `localhost:<port>` on your local machine and select the appropriate environment from the drop down to visualize the plots. For example, if I want to start a `sl-abot` job which logs plots by connecting to the above visdom server (hosted at `localhost:<port>`), the following command may be used to create an environment titled `my-abot-job`
+Now you can navigate to `localhost:<port>` on your local machine and select the appropriate environment from the drop down to visualize the plots. For example, if I want to start a `sl-abot` job which logs plots by connecting to the above visdom server (hosted at `localhost:<port>`), the following command may be used to create an environment titled `my-abot-job`:
 
 ```
 python train.py -useGPU \
@@ -176,6 +151,40 @@ python train.py -useGPU \
     -visdomServerPort <port> \
     -visdomEnv my-abot-job
 ```
+
+
+### Evaluation
+
+The three types of evaluation - (1) ranking A-Bot's answers, (2) ranking Q-Bot's image predictions and (3) ranking Q-Bot's predictions when interacting with an A-Bot, are arguments `QBotRank`, `ABotRank` and `QABotsRank` respectively to `evalMode`. Any subset of them can be given as a list to `evalMode`. All evaluation outputs are displayed on visdom, so an active visdom server is required to run evaluation.
+
+For evaluation of Q-Bot on image guessing and A-Bot on answer ranking on human-human dialog (ground truth captions, questions and answers), the following command can be used:
+
+```
+python evaluate.py -useGPU \
+    -startFrom checkpoints/abot_sl_ep60.vd \
+    -qstartFrom checkpoints/qbot_sl_ep60.vd \
+    -enableVisdom 1 \
+    -visdomServer http://127.0.0.1 \
+    -visdomServerPort <port> \
+    -visdomEnv my-eval-job \
+    -evalMode ABotRank QBotRank
+
+```
+
+For evaluation of Q-Bot on image guessing when interacting with an A-Bot, the following command can be used. Since no human-human dialog (ground truth) is shown to the agents at this stage, ground truth captions are not used. Instead, captions need to be read from `chat_processed_data_gencaps.h5`, which contains preprocessed captions generated from [neuraltalk2](https://github.com/karpathy/neuraltalk2). This file provides the VisDial 0.5 test split where original ground truth captions are replaced by generated captions.
+
+```
+python evaluate.py -useGPU \
+    -inputQues data/visdial/chat_processed_data_gencaps.h5 \
+    -startFrom checkpoints/abot_sl_ep60.vd \
+    -qstartFrom checkpoints/qbot_sl_ep60.vd \
+    -enableVisdom 1 \
+    -visdomServer http://127.0.0.1 \
+    -visdomServerPort <port> \
+    -visdomEnv my-eval-job \
+    -evalMode QABotsRank
+```
+
 
 ### Benchmarks
 
