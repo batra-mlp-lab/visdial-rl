@@ -1,10 +1,31 @@
-import os
-import json
-import h5py
-import copy
 import argparse
+import copy
+import h5py
+import json
+import os
 import numpy as np
 from nltk.tokenize import word_tokenize
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-download', action='store_true', help='Whether to download VisDial data')
+parser.add_argument('-version', default='1.0', help='Version of VisDial to be downloaded', choices=['0.5', '0.9', '1.0'])
+
+# Input files
+parser.add_argument('-input_json_train', default='visdial_1.0_train.json', help='Input `train` json file')
+parser.add_argument('-input_json_val', default='visdial_1.0_val.json', help='Input `val` json file')
+parser.add_argument('-input_json_test', default='visdial_1.0_test.json', help='Input `test` json file')
+
+# Output files
+parser.add_argument('-output_json', default='visdial/chat_processed_params.json', help='Output json file')
+parser.add_argument('-output_h5', default='visdial/chat_processed_data.h5', help='Output hdf5 file')
+
+# Options
+parser.add_argument('-max_ques_len', default=20, type=int, help='Max length of questions')
+parser.add_argument('-max_ans_len', default=20, type=int, help='Max length of answers')
+parser.add_argument('-max_cap_len', default=40, type=int, help='Max length of captions')
+parser.add_argument('-word_count_threshold', default=5, type=int, help='Min threshold of word count to include in vocabulary')
+
 
 def tokenize_data(data, word_count=False):
     '''
@@ -135,11 +156,11 @@ def create_data_mats(data_toks, ques_inds, ans_inds, params, dtype):
 
     return captions, caption_len, questions, question_len, answers, answer_len, options, options_list, options_len, answer_index, image_index, image_list, num_rounds_list
 
+
 def map_format(data, split):
-    '''
-    Map VisDial v0.5 JSON format to the v0.9 format, for easy preprocessing 
-                    (https://visualdialog.org/data)
-    '''
+    """Map VisDial v0.5 JSON format to the v0.9 format, for easy 
+    preprocessing. (https://visualdialog.org/data)
+    """
     questions, answers = [], []
     for ix, dp in enumerate(data):
         for rd in dp['dialog']:
@@ -180,69 +201,58 @@ def map_format(data, split):
     }
     
     return mapped_data
+
     
 def split_train_val(data_train_val):
-    '''
-    Split into train and val as described in the paper
-    '''
+    """Split v0.9 train into train and val as described in the paper."""
     data_train, data_val = copy.deepcopy(data_train_val), copy.deepcopy(data_train_val)
-    data_train["data"]["dialogs"] = data_train_val["data"]["dialogs"][:80000]
-    data_val["data"]["dialogs"] = data_train_val["data"]["dialogs"][80000:]
-    data_val["split"] = "val"
+    data_train['data']['dialogs'] = data_train_val['data']['dialogs'][:80000]
+    data_val['data']['dialogs'] = data_train_val['data']['dialogs'][80000:]
+    data_val['split'] = 'val'
     return data_train, data_val
 
+
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-download', default=0, type=int, help='Whether to download VisDial v0.9 data')
-    parser.add_argument('-version', default='0.5', help='Choose the dataset version: 0.5 | 0.9', choices=['0.5', '0.9'])
-
-    # Input files
-    parser.add_argument('-input_json_train', default='visdial_0.5_train.json', help='Input `train` json file')
-    parser.add_argument('-input_json_val', default='visdial_0.5_val.json', help='Input `val` json file')
-    parser.add_argument('-input_json_test', default='visdial_0.5_test.json', help='Input `test` json file')
-
-    # Output files
-    parser.add_argument('-output_json', default='visdial/chat_processed_params.json', help='Output json file')
-    parser.add_argument('-output_h5', default='visdial/chat_processed_data.h5', help='Output hdf5 file')
-
-    # Options
-    parser.add_argument('-max_ques_len', default=20, type=int, help='Max length of questions')
-    parser.add_argument('-max_ans_len', default=20, type=int, help='Max length of answers')
-    parser.add_argument('-max_cap_len', default=40, type=int, help='Max length of captions')
-    parser.add_argument('-word_count_threshold', default=5, type=int, help='Min threshold of word count to include in vocabulary')
-
     args = parser.parse_args()
+    os.makedirs('./visdial',  exist_ok=True)
+
+    if args.download:
+        if args.version == '1.0':
+            os.system('wget -O visdial_1.0_train.zip https://www.dropbox.com/s/ix8keeudqrd8hn8/visdial_1.0_train.zip?dl=0')
+            os.system('wget -O visdial_1.0_val.zip https://www.dropbox.com/s/ibs3a0zhw74zisc/visdial_1.0_val.zip?dl=0')
+            os.system('wget -O visdial_1.0_test.zip https://www.dropbox.com/s/o7mucbre2zm7i5n/visdial_1.0_test.zip?dl=0')
+            os.system('unzip visdial_1.0_train.zip')
+            os.system('unzip visdial_1.0_val.zip')
+            os.system('unzip visdial_1.0_test.zip')
+        elif args.version == '0.9':
+            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.9_train.zip')
+            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.9_val.zip')
+            os.system('unzip visdial_0.9_train.zip')
+            os.system('unzip visdial_0.9_val.zip')
+        elif args.version == '0.5':
+            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.5_train.json')
+            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.5_val.json')
+            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.5_test.json')        
+        args.input_json_train = 'visdial_%s_train.json' % args.version
+        args.input_json_val = 'visdial_%s_val.json' % args.version
+        args.input_json_test = 'visdial_%s_test.json' % args.version  # visdial_0.9_test.json is redundant
 
     assert (args.version in args.input_json_train) and (args.version in args.input_json_val), \
            "Input data and version are incompatible! Refer to README for instructions."
 
-    os.makedirs('./visdial',  exist_ok=True)
-
-    if args.version == '0.5':
-        if args.download == 1:
-            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.5_train.json')
-            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.5_val.json')
-            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.5_test.json')
-        
-        print('Reading json...')
-        data_train = map_format(json.load(open(args.input_json_train, 'r')), 'train')
-        data_val = map_format(json.load(open(args.input_json_val, 'r')), 'val')
-        data_test = map_format(json.load(open(args.input_json_test, 'r')), 'test')
-
+    print('Reading json...')
+    if args.version == '1.0':
+        data_train = json.load(open(args.input_json_train, 'r'))
+        data_val = json.load(open(args.input_json_val, 'r'))
+        data_test = json.load(open(args.input_json_test, 'r'))
     elif args.version == '0.9':
-        if args.download == 1:
-            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.9_train.zip')
-            os.system('wget https://computing.ece.vt.edu/~abhshkdz/data/visdial/visdial_0.9_val.zip')
-        
-            os.system('unzip visdial_0.9_train.zip')
-            os.system('unzip visdial_0.9_val.zip')
-
-        print('Reading json...')
         data_train_val = json.load(open(args.input_json_train, 'r'))
         data_train, data_val = split_train_val(data_train_val)
         data_test = json.load(open(args.input_json_val, 'r'))
+    elif args.version == '0.5':
+        data_train = map_format(json.load(open(args.input_json_train, 'r')), 'train')
+        data_val = map_format(json.load(open(args.input_json_val, 'r')), 'val')
+        data_test = map_format(json.load(open(args.input_json_test, 'r')), 'test')
 
     # Tokenizing
     data_train_toks, ques_train_toks, ans_train_toks, word_counts_train = tokenize_data(data_train, True)
