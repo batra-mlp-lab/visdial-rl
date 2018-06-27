@@ -59,12 +59,7 @@ Note: This requires [Torch](http://torch.ch/) to run. Scroll down further if you
 
 ```
 cd data/
-python prepro.py -version 0.5 -download 1
-
-# To process VisDial v0.9, run:
-# python prepro.py -version 0.9 -download 1 -input_json_train visdial_0.9_train.json \
-#                                           -input_json_val visdial_0.9_val.json
-
+python prepro.py -download -version 0.5  # similar for v0.9 and v1.0 splits
 cd ..
 
 ```

@@ -1,5 +1,6 @@
 import argparse
 import copy
+import glob
 import h5py
 import json
 import os
@@ -10,13 +11,14 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-download', action='store_true', help='Whether to download VisDial data')
+parser.add_argument('-version', default='1.0', help='Version of VisDial data to download', choices=['0.5', '0.9', '1.0'])
 parser.add_argument('-train_split', default='train', help='Choose the data split: train | trainval', choices=['train', 'trainval'])
 
 # Input files
 parser.add_argument('-input_json_train', default='visdial_1.0_train.json', help='Input `train` json file')
 parser.add_argument('-input_json_val', default='visdial_1.0_val.json', help='Input `val` json file')
 parser.add_argument('-input_json_test', default='visdial_1.0_test.json', help='Input `test` json file')
-parser.add_argument('-image_root', default='/path/to/images', help='Path to mscoco and VisDial val/test images')
+parser.add_argument('-image_root', default='/path/to/images', help='Path to coco and VisDial val/test images')
 parser.add_argument('-input_vocab', default=False, help='Optional vocab file; similar to visdial_params.json')
 
 # Output files
@@ -244,9 +246,9 @@ if __name__ == "__main__":
 
     if args.download:
         if args.version == '1.0':
-            os.system('wget -O visdial_1.0_train.zip https://www.dropbox.com/s/ix8keeudqrd8hn8/visdial_1.0_train.zip?dl=0')
-            os.system('wget -O visdial_1.0_val.zip https://www.dropbox.com/s/ibs3a0zhw74zisc/visdial_1.0_val.zip?dl=0')
-            os.system('wget -O visdial_1.0_test.zip https://www.dropbox.com/s/o7mucbre2zm7i5n/visdial_1.0_test.zip?dl=0')
+            os.system('wget https://www.dropbox.com/s/ix8keeudqrd8hn8/visdial_1.0_train.zip')
+            os.system('wget https://www.dropbox.com/s/ibs3a0zhw74zisc/visdial_1.0_val.zip')
+            os.system('wget https://www.dropbox.com/s/o7mucbre2zm7i5n/visdial_1.0_test.zip')
             os.system('unzip visdial_1.0_train.zip')
             os.system('unzip visdial_1.0_val.zip')
             os.system('unzip visdial_1.0_test.zip')
@@ -281,84 +283,85 @@ if __name__ == "__main__":
         data_test = map_format(json.load(open(args.input_json_test, 'r')), 'test')
 
     # Tokenizing
-    data_train_toks, ques_train_toks, ans_train_toks, word_counts_train = tokenize_data(data_train, True)
-    data_val_toks, ques_val_toks, ans_val_toks, word_counts_val = tokenize_data(data_val, True)
-    data_test_toks, ques_test_toks, ans_test_toks, word_counts_test = tokenize_data(data_test, True)
+    data_train, word_counts_train = tokenize_data(data_train, True)
+    data_val, word_counts_val = tokenize_data(data_val, True)
+    data_test, word_counts_test = tokenize_data(data_test, True)
 
-    word_counts_all = dict(word_counts_train)
+    if args.input_vocab == False:
+        word_counts_all = dict(word_counts_train)
 
-    for word, count in word_counts_val.items():
-        word_counts_all[word] = word_counts_all.get(word, 0) + count
+        for word, count in word_counts_val.items():
+            word_counts_all[word] = word_counts_all.get(word, 0) + count
+        for word, count in word_counts_test.items():
+            word_counts_all[word] = word_counts_all.get(word, 0) + count
 
-    for word, count in word_counts_test.items():
-        word_counts_all[word] = word_counts_all.get(word, 0) + count
+        print('Building vocabulary...')
+        word_counts_all['UNK'] = args.word_count_threshold
+        vocab = [word for word in word_counts_all \
+                if word_counts_all[word] >= args.word_count_threshold]
+        print('Words: %d' % len(vocab))
+        word2ind = {word: word_ind + 1 for word_ind, word in enumerate(vocab)}
+        ind2word = {word_ind: word for word, word_ind in word2ind.items()}
+    else:
+        print('Loading vocab from %s...' % args.input_vocab)
+        vocab_data = json.load(open(args.input_vocab, 'r'))
 
-    print('Building vocabulary...')
-    word_counts_all['UNK'] = args.word_count_threshold
-    vocab = [word for word in word_counts_all \
-            if word_counts_all[word] >= args.word_count_threshold]
-    print('Words: %d' % len(vocab))
-    word2ind = {word:word_ind+1 for word_ind, word in enumerate(vocab)}
-    ind2word = {word_ind:word for word, word_ind in word2ind.items()}
+        word2ind = vocab_data['word2ind']
+        for i in word2ind:
+            word2ind[i] = int(word2ind[i])
+
+        ind2word = {}
+        for i in vocab_data['ind2word']:
+            ind2word[int(i)] = vocab_data['ind2word'][i]
 
     print('Encoding based on vocabulary...')
-    data_train_toks, ques_train_inds, ans_train_inds = encode_vocab(data_train_toks, ques_train_toks, ans_train_toks, word2ind)
-    data_val_toks, ques_val_inds, ans_val_inds = encode_vocab(data_val_toks, ques_val_toks, ans_val_toks, word2ind)
-    data_test_toks, ques_test_inds, ans_test_inds = encode_vocab(data_test_toks, ques_test_toks, ans_test_toks, word2ind)
+    data_train = encode_vocab(data_train, word2ind)
+    data_val = encode_vocab(data_val, word2ind)
+    data_test = encode_vocab(data_test, word2ind)
 
     print('Creating data matrices...')
-    captions_train, captions_train_len, questions_train, questions_train_len, answers_train, answers_train_len, options_train, options_train_list, options_train_len, answers_train_index, images_train_index, images_train_list, _ = create_data_mats(data_train_toks, ques_train_inds, ans_train_inds, args, 'train')
-    captions_val, captions_val_len, questions_val, questions_val_len, answers_val, answers_val_len, options_val, options_val_list, options_val_len, answers_val_index, images_val_index, images_val_list, _ = create_data_mats(data_val_toks, ques_val_inds, ans_val_inds, args, 'val')
-    captions_test, captions_test_len, questions_test, questions_test_len, answers_test, answers_test_len, options_test, options_test_list, options_test_len, answers_test_index, images_test_index, images_test_list, num_rounds_test = create_data_mats(data_test_toks, ques_test_inds, ans_test_inds, args, 'test')
+    data_mats_train = create_data_mats(data_train, args, 'train')
+    data_mats_val = create_data_mats(data_val, args, 'val')
+    data_mats_test = create_data_mats(data_test, args, 'test')
 
-    print('Saving hdf5...')
+    if args.train_split == 'trainval':
+        data_mats_trainval = {}
+        for key in data_mats_train:
+            data_mats_trainval[key] = np.concatenate((data_mats_train[key],
+                                                      data_mats_val[key]), axis = 0)
+
+    print('Saving hdf5 to %s...' % args.output_h5)
     f = h5py.File(args.output_h5, 'w')
-    f.create_dataset('ques_train', dtype='uint32', data=questions_train)
-    f.create_dataset('ques_length_train', dtype='uint32', data=questions_train_len)
-    f.create_dataset('ans_train', dtype='uint32', data=answers_train)
-    f.create_dataset('ans_length_train', dtype='uint32', data=answers_train_len)
-    f.create_dataset('ans_index_train', dtype='uint32', data=answers_train_index)
-    f.create_dataset('cap_train', dtype='uint32', data=captions_train)
-    f.create_dataset('cap_length_train', dtype='uint32', data=captions_train_len)
-    f.create_dataset('opt_train', dtype='uint32', data=options_train)
-    f.create_dataset('opt_length_train', dtype='uint32', data=options_train_len)
-    f.create_dataset('opt_list_train', dtype='uint32', data=options_train_list)
-    f.create_dataset('img_pos_train', dtype='uint32', data=images_train_index)
+    if args.train_split == 'train':
+        for key in data_mats_train:
+            f.create_dataset(key + '_train', dtype='uint32', data=data_mats_train[key])
 
-    f.create_dataset('ques_val', dtype='uint32', data=questions_val)
-    f.create_dataset('ques_length_val', dtype='uint32', data=questions_val_len)
-    f.create_dataset('ans_val', dtype='uint32', data=answers_val)
-    f.create_dataset('ans_length_val', dtype='uint32', data=answers_val_len)
-    f.create_dataset('ans_index_val', dtype='uint32', data=answers_val_index)
-    f.create_dataset('cap_val', dtype='uint32', data=captions_val)
-    f.create_dataset('cap_length_val', dtype='uint32', data=captions_val_len)
-    f.create_dataset('opt_val', dtype='uint32', data=options_val)
-    f.create_dataset('opt_length_val', dtype='uint32', data=options_val_len)
-    f.create_dataset('opt_list_val', dtype='uint32', data=options_val_list)
-    f.create_dataset('img_pos_val', dtype='uint32', data=images_val_index)
+        for key in data_mats_val:
+            f.create_dataset(key + '_val', dtype='uint32', data=data_mats_val[key])
 
-    f.create_dataset('ques_test', dtype='uint32', data=questions_test)
-    f.create_dataset('ques_length_test', dtype='uint32', data=questions_test_len)
-    f.create_dataset('ans_test', dtype='uint32', data=answers_test)
-    f.create_dataset('ans_length_test', dtype='uint32', data=answers_test_len)
-    f.create_dataset('ans_index_test', dtype='uint32', data=answers_test_index)
-    f.create_dataset('cap_test', dtype='uint32', data=captions_test)
-    f.create_dataset('cap_length_test', dtype='uint32', data=captions_test_len)
-    f.create_dataset('opt_test', dtype='uint32', data=options_test)
-    f.create_dataset('opt_length_test', dtype='uint32', data=options_test_len)
-    f.create_dataset('opt_list_test', dtype='uint32', data=options_test_list)
-    f.create_dataset('img_pos_test', dtype='uint32', data=images_test_index)
-    
-    f.create_dataset('num_rounds_test', dtype='uint32', data=num_rounds_test)
+    elif args.train_split == 'trainval':
+        for key in data_mats_trainval:
+            f.create_dataset(key + '_train', dtype='uint32', data=data_mats_trainval[key])
 
+    for key in data_mats_test:
+        f.create_dataset(key + '_test', dtype='uint32', data=data_mats_test[key])
     f.close()
 
     out = {}
     out['ind2word'] = ind2word
     out['word2ind'] = word2ind
 
-    out['unique_img_train'] = images_train_list
-    out['unique_img_val'] = images_val_list
-    out['unique_img_test'] = images_test_list
+    print('Preparing image paths with image_ids...')
+    id2path = {}
+    # NOTE: based on assumption that image_id is unique across all splits
+    for image_path in tqdm(glob.iglob(os.path.join(args.image_root, '*', '*.jpg'))):
+        id2path[int(image_path[-12:-4])] = '/'.join(image_path.split('/')[1:])
 
+    out['unique_img_train'] = get_image_ids(data_train, id2path)
+    out['unique_img_val'] = get_image_ids(data_val, id2path)
+    out['unique_img_test'] = get_image_ids(data_test, id2path)
+    if args.train_split == 'trainval':
+        out['unique_img_train'] += out['unique_img_val']
+        out.pop('unique_img_val')
+    print('Saving json to %s...' % args.output_json)
     json.dump(out, open(args.output_json, 'w'))
