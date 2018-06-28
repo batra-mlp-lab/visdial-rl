@@ -228,6 +228,7 @@ To generate dialog for visualization, run `evaluate.py` with `evalMode` set to `
 python evaluate.py -useGPU \
     -startFrom checkpoints/abot_rl_ep20.vd \
     -qstartFrom checkpoints/qbot_rl_ep20.vd \
+    -inputQues data/visdial/chat_processed_data_gencaps.h5 \
     -evalMode dialog \
     -cocoDir /path/to/coco/images/ \
     -cocoInfo /path/to/coco.json \
