@@ -11,13 +11,13 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-download', action='store_true', help='Whether to download VisDial data')
-parser.add_argument('-version', default='1.0', help='Version of VisDial data to download', choices=['0.5', '0.9', '1.0'])
+parser.add_argument('-version', default='0.5', help='Version of VisDial data to download', choices=['0.5', '0.9', '1.0'])
 parser.add_argument('-train_split', default='train', help='Choose the data split: train | trainval', choices=['train', 'trainval'])
 
 # Input files
-parser.add_argument('-input_json_train', default='visdial_1.0_train.json', help='Input `train` json file')
-parser.add_argument('-input_json_val', default='visdial_1.0_val.json', help='Input `val` json file')
-parser.add_argument('-input_json_test', default='visdial_1.0_test.json', help='Input `test` json file')
+parser.add_argument('-input_json_train', default='visdial_0.5_train.json', help='Input `train` json file')
+parser.add_argument('-input_json_val', default='visdial_0.5_val.json', help='Input `val` json file')
+parser.add_argument('-input_json_test', default='visdial_0.5_test.json', help='Input `test` json file')
 parser.add_argument('-image_root', default='/path/to/images', help='Path to coco and VisDial val/test images')
 parser.add_argument('-input_vocab', default=False, help='Optional vocab file; similar to visdial_params.json')
 
