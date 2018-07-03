@@ -1,1 +1,4 @@
 visdial/
+*.json
+*.h5
+*.zip
