@@ -59,19 +59,17 @@ Note: This requires [Torch](http://torch.ch/) to run. Scroll down further if you
 
 ```
 cd data/
-python prepro.py -download -version 0.5 -image_root /path/to/images  # similar for v0.9 and v1.0 splits
+python prepro.py -version 0.5 -download 1
+
+# To process VisDial v0.9, run:
+# python prepro.py -version 0.9 -download 1 -input_json_train visdial_0.9_train.json \
+#                                           -input_json_val visdial_0.9_val.json
+
 cd ..
 
 ```
 
 This will generate the files `data/visdial/chat_processed_data.h5` (containing tokenized captions, questions, answers, and image indices), and `data/visdial/chat_processed_params.json` (containing vocabulary mappings and COCO image ID's).
-
-#### Preprocessing VisDial v1.0 for Visual Dialog Challenge
-
-To preprocess VisDial v1.0 split, run the following:
-```
-python prepro.py -download -version 1.0 -image_root /path/to/images
-```
 
 ### Extracting image features
 
