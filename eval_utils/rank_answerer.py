@@ -31,16 +31,9 @@ def rankOptions(options, gtOptions, scores):
     ranks += 1
 
     gtOptions = gtOptions.view(-1)
-    numOptions = options.size(1)
-    ranks = ranks.view(-1, numOptions)
     gtRanks = torch.LongTensor(gtOptions.size(0))
-
     for i in range(gtOptions.size(0)):
-        gtBinary = torch.zeros(numOptions)
-        gtBinary[gtOptions[i]] = 1
-        sortedGt = gtBinary.index_select(0, ranks[i].sort()[1].cpu())
-        gtRank = (sortedGt == 1).nonzero() + 1
-        gtRanks[i] = int(gtRank)  # gtRank is 1x1 LongTensor
+        gtRanks[i] = int(ranks[i, gtOptions[i]])
 
     return gtRanks
 
