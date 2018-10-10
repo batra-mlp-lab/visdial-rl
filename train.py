@@ -109,7 +109,7 @@ if params['continue']:  # Restoring optimizer state
     optimizer.load_state_dict(optim_state)
 runningLoss = None
 
-mse_criterion = nn.MSELoss(size_average=True, reduce=True)
+mse_criterion = nn.MSELoss(reduce=False)
 
 numIterPerEpoch = dataset.numDataPoints['train'] // params['batchSize']
 print('\n%d iter per epoch.' % numIterPerEpoch)
@@ -182,7 +182,8 @@ for epochId, idx, batch in batch_iter(dataloader):
     if params['trainMode'] in ['sl-qbot', 'rl-full-QAf']:
         initialGuess = qBot.predictImage()
         prevFeatDist = mse_criterion(initialGuess, image)
-        featLoss += prevFeatDist
+        featLoss += torch.mean(prevFeatDist)
+        prevFeatDist = torch.mean(prevFeatDist,1)
 
     # Iterating over dialog rounds
     for round in range(numRounds):
@@ -270,6 +271,7 @@ for epochId, idx, batch in batch_iter(dataloader):
             # Make an image prediction after each round
             predFeatures = qBot.predictImage()
             featDist = mse_criterion(predFeatures, image)
+            featDist = torch.mean(featDist)
             featLoss += featDist
 
         # A-Bot and Q-Bot interacting in RL rounds
@@ -287,6 +289,7 @@ for epochId, idx, batch in batch_iter(dataloader):
 
             # Computing reward based on Q-Bot's predicted image
             featDist = mse_criterion(predFeatures, image)
+            featDist = torch.mean(featDist,1)
 
             reward = prevFeatDist.detach() - featDist
             prevFeatDist = featDist
