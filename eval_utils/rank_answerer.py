@@ -20,14 +20,22 @@ from six.moves import range
 
 def rankOptions(options, gtOptions, scores):
     '''Rank a batch of examples against a list of options.'''
-    numOptions = options.size(1)
-    # Compute score of GT options in 'scores'
-    gtScores = scores.gather(1, gtOptions.unsqueeze(1))
-    # Sort all predicted scores
-    sortedScore, _ = torch.sort(scores, 1)
-    # In sorted scores, count how many are greater than the GT score
-    ranks = torch.sum(sortedScore.gt(gtScores).float(), 1)
-    return ranks + 1
+    # sort in descending order - largest score gets highest rank
+    sortedRanks, rankedIdx = scores.sort(1, descending=True)
+
+    # convert from rankedIdx to ranks
+    ranks = rankedIdx.clone().fill_(0)
+    for i in range(rankedIdx.size(0)):
+        for j in range(100):
+            ranks[i][rankedIdx[i][j]] = j
+    ranks += 1
+
+    gtOptions = gtOptions.view(-1)
+    gtRanks = torch.LongTensor(gtOptions.size(0))
+    for i in range(gtOptions.size(0)):
+        gtRanks[i] = int(ranks[i, gtOptions[i]])
+
+    return gtRanks
 
 
 def rankABot(aBot, dataset, split, scoringFunction, exampleLimit=None):
